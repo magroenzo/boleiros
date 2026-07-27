@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JogadorUsernameRouteImport } from './routes/jogador.$username'
 import { Route as AuthenticatedPublicarRouteImport } from './routes/_authenticated/publicar'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedPartidaNovaRouteImport } from './routes/_authenticated/partida.nova'
 
@@ -30,9 +32,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JogadorUsernameRoute = JogadorUsernameRouteImport.update({
+  id: '/jogador/$username',
+  path: '/jogador/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPublicarRoute = AuthenticatedPublicarRouteImport.update({
   id: '/publicar',
   path: '/publicar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNotificacoesRoute =
@@ -52,14 +64,18 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
+  '/jogador/$username': typeof JogadorUsernameRoute
   '/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
+  '/jogador/$username': typeof JogadorUsernameRoute
   '/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRoutesById {
@@ -68,21 +84,39 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/publicar': typeof AuthenticatedPublicarRoute
+  '/jogador/$username': typeof JogadorUsernameRoute
   '/_authenticated/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/notificacoes' | '/publicar' | '/partida/nova'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/notificacoes'
+    | '/perfil'
+    | '/publicar'
+    | '/jogador/$username'
+    | '/partida/nova'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/notificacoes' | '/publicar' | '/partida/nova'
+  to:
+    | '/'
+    | '/auth'
+    | '/notificacoes'
+    | '/perfil'
+    | '/publicar'
+    | '/jogador/$username'
+    | '/partida/nova'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/notificacoes'
+    | '/_authenticated/perfil'
     | '/_authenticated/publicar'
+    | '/jogador/$username'
     | '/_authenticated/partida/nova'
   fileRoutesById: FileRoutesById
 }
@@ -90,6 +124,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  JogadorUsernameRoute: typeof JogadorUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,11 +150,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jogador/$username': {
+      id: '/jogador/$username'
+      path: '/jogador/$username'
+      fullPath: '/jogador/$username'
+      preLoaderRoute: typeof JogadorUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/publicar': {
       id: '/_authenticated/publicar'
       path: '/publicar'
       fullPath: '/publicar'
       preLoaderRoute: typeof AuthenticatedPublicarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/notificacoes': {
@@ -141,12 +190,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPublicarRoute: typeof AuthenticatedPublicarRoute
   AuthenticatedPartidaNovaRoute: typeof AuthenticatedPartidaNovaRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPublicarRoute: AuthenticatedPublicarRoute,
   AuthenticatedPartidaNovaRoute: AuthenticatedPartidaNovaRoute,
 }
@@ -158,6 +209,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  JogadorUsernameRoute: JogadorUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
