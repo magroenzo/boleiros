@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, Ruler, ShieldCheck, Weight } from "lucide-react";
+import { MapPin, ShieldCheck } from "lucide-react";
 
 import { PlayerAvatar } from "@/components/SignedImage";
 import { StatCard } from "@/components/StatCard";
@@ -85,11 +85,6 @@ export function ProfileHeader({
             + Registrar partida
           </div>
         </Link>
-      </div>
-
-      <div className="hidden">
-        <Ruler />
-        <Weight />
       </div>
     </section>
   );
