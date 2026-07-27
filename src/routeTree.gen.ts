@@ -9,15 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TimeTeamIdRouteImport } from './routes/time.$teamId'
 import { Route as JogadorUsernameRouteImport } from './routes/jogador.$username'
 import { Route as AuthenticatedPublicarRouteImport } from './routes/_authenticated/publicar'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedPartidaNovaRouteImport } from './routes/_authenticated/partida.nova'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuscarRoute = BuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -30,6 +43,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimeTeamIdRoute = TimeTeamIdRouteImport.update({
+  id: '/time/$teamId',
+  path: '/time/$teamId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JogadorUsernameRoute = JogadorUsernameRouteImport.update({
@@ -63,19 +81,25 @@ const AuthenticatedPartidaNovaRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/buscar': typeof BuscarRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/jogador/$username': typeof JogadorUsernameRoute
+  '/time/$teamId': typeof TimeTeamIdRoute
   '/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/buscar': typeof BuscarRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/jogador/$username': typeof JogadorUsernameRoute
+  '/time/$teamId': typeof TimeTeamIdRoute
   '/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRoutesById {
@@ -83,10 +107,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/buscar': typeof BuscarRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/publicar': typeof AuthenticatedPublicarRoute
   '/jogador/$username': typeof JogadorUsernameRoute
+  '/time/$teamId': typeof TimeTeamIdRoute
   '/_authenticated/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRouteTypes {
@@ -94,29 +121,38 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/buscar'
+    | '/sitemap.xml'
     | '/notificacoes'
     | '/perfil'
     | '/publicar'
     | '/jogador/$username'
+    | '/time/$teamId'
     | '/partida/nova'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/buscar'
+    | '/sitemap.xml'
     | '/notificacoes'
     | '/perfil'
     | '/publicar'
     | '/jogador/$username'
+    | '/time/$teamId'
     | '/partida/nova'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/buscar'
+    | '/sitemap.xml'
     | '/_authenticated/notificacoes'
     | '/_authenticated/perfil'
     | '/_authenticated/publicar'
     | '/jogador/$username'
+    | '/time/$teamId'
     | '/_authenticated/partida/nova'
   fileRoutesById: FileRoutesById
 }
@@ -124,11 +160,28 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  BuscarRoute: typeof BuscarRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   JogadorUsernameRoute: typeof JogadorUsernameRoute
+  TimeTeamIdRoute: typeof TimeTeamIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buscar': {
+      id: '/buscar'
+      path: '/buscar'
+      fullPath: '/buscar'
+      preLoaderRoute: typeof BuscarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -148,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/time/$teamId': {
+      id: '/time/$teamId'
+      path: '/time/$teamId'
+      fullPath: '/time/$teamId'
+      preLoaderRoute: typeof TimeTeamIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jogador/$username': {
@@ -209,7 +269,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  BuscarRoute: BuscarRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   JogadorUsernameRoute: JogadorUsernameRoute,
+  TimeTeamIdRoute: TimeTeamIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
