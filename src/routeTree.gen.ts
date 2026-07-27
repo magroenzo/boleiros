@@ -14,11 +14,14 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as AuthenticatedDisponibilidadeRouteImport } from './routes/_authenticated/disponibilidade'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedPublicarRouteImport } from './routes/_authenticated/publicar'
 import { Route as JogadorUsernameRouteImport } from './routes/jogador.$username'
 import { Route as TimeTeamIdRouteImport } from './routes/time.$teamId'
+import { Route as AuthenticatedJogoJogoIdRouteImport } from './routes/_authenticated/jogo.$jogoId'
+import { Route as AuthenticatedJogoNovoRouteImport } from './routes/_authenticated/jogo.novo'
 import { Route as AuthenticatedPartidaNovaRouteImport } from './routes/_authenticated/partida.nova'
 
 const IndexRoute = IndexRouteImport.update({
@@ -45,6 +48,12 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedDisponibilidadeRoute =
+  AuthenticatedDisponibilidadeRouteImport.update({
+    id: '/disponibilidade',
+    path: '/disponibilidade',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNotificacoesRoute =
   AuthenticatedNotificacoesRouteImport.update({
     id: '/notificacoes',
@@ -71,6 +80,16 @@ const TimeTeamIdRoute = TimeTeamIdRouteImport.update({
   path: '/time/$teamId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedJogoJogoIdRoute = AuthenticatedJogoJogoIdRouteImport.update({
+  id: '/jogo/$jogoId',
+  path: '/jogo/$jogoId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedJogoNovoRoute = AuthenticatedJogoNovoRouteImport.update({
+  id: '/jogo/novo',
+  path: '/jogo/novo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPartidaNovaRoute =
   AuthenticatedPartidaNovaRouteImport.update({
     id: '/partida/nova',
@@ -83,11 +102,14 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/disponibilidade': typeof AuthenticatedDisponibilidadeRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/jogador/$username': typeof JogadorUsernameRoute
   '/time/$teamId': typeof TimeTeamIdRoute
+  '/jogo/$jogoId': typeof AuthenticatedJogoJogoIdRoute
+  '/jogo/novo': typeof AuthenticatedJogoNovoRoute
   '/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRoutesByTo {
@@ -95,11 +117,14 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/disponibilidade': typeof AuthenticatedDisponibilidadeRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/publicar': typeof AuthenticatedPublicarRoute
   '/jogador/$username': typeof JogadorUsernameRoute
   '/time/$teamId': typeof TimeTeamIdRoute
+  '/jogo/$jogoId': typeof AuthenticatedJogoJogoIdRoute
+  '/jogo/novo': typeof AuthenticatedJogoNovoRoute
   '/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRoutesById {
@@ -109,11 +134,14 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/buscar': typeof BuscarRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/disponibilidade': typeof AuthenticatedDisponibilidadeRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/publicar': typeof AuthenticatedPublicarRoute
   '/jogador/$username': typeof JogadorUsernameRoute
   '/time/$teamId': typeof TimeTeamIdRoute
+  '/_authenticated/jogo/$jogoId': typeof AuthenticatedJogoJogoIdRoute
+  '/_authenticated/jogo/novo': typeof AuthenticatedJogoNovoRoute
   '/_authenticated/partida/nova': typeof AuthenticatedPartidaNovaRoute
 }
 export interface FileRouteTypes {
@@ -123,11 +151,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/sitemap.xml'
+    | '/disponibilidade'
     | '/notificacoes'
     | '/perfil'
     | '/publicar'
     | '/jogador/$username'
     | '/time/$teamId'
+    | '/jogo/$jogoId'
+    | '/jogo/novo'
     | '/partida/nova'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -135,11 +166,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/sitemap.xml'
+    | '/disponibilidade'
     | '/notificacoes'
     | '/perfil'
     | '/publicar'
     | '/jogador/$username'
     | '/time/$teamId'
+    | '/jogo/$jogoId'
+    | '/jogo/novo'
     | '/partida/nova'
   id:
     | '__root__'
@@ -148,11 +182,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/buscar'
     | '/sitemap.xml'
+    | '/_authenticated/disponibilidade'
     | '/_authenticated/notificacoes'
     | '/_authenticated/perfil'
     | '/_authenticated/publicar'
     | '/jogador/$username'
     | '/time/$teamId'
+    | '/_authenticated/jogo/$jogoId'
+    | '/_authenticated/jogo/novo'
     | '/_authenticated/partida/nova'
   fileRoutesById: FileRoutesById
 }
@@ -203,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/disponibilidade': {
+      id: '/_authenticated/disponibilidade'
+      path: '/disponibilidade'
+      fullPath: '/disponibilidade'
+      preLoaderRoute: typeof AuthenticatedDisponibilidadeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/notificacoes': {
       id: '/_authenticated/notificacoes'
       path: '/notificacoes'
@@ -238,6 +282,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TimeTeamIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/jogo/$jogoId': {
+      id: '/_authenticated/jogo/$jogoId'
+      path: '/jogo/$jogoId'
+      fullPath: '/jogo/$jogoId'
+      preLoaderRoute: typeof AuthenticatedJogoJogoIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jogo/novo': {
+      id: '/_authenticated/jogo/novo'
+      path: '/jogo/novo'
+      fullPath: '/jogo/novo'
+      preLoaderRoute: typeof AuthenticatedJogoNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/partida/nova': {
       id: '/_authenticated/partida/nova'
       path: '/partida/nova'
@@ -249,16 +307,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDisponibilidadeRoute: typeof AuthenticatedDisponibilidadeRoute
   AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPublicarRoute: typeof AuthenticatedPublicarRoute
+  AuthenticatedJogoJogoIdRoute: typeof AuthenticatedJogoJogoIdRoute
+  AuthenticatedJogoNovoRoute: typeof AuthenticatedJogoNovoRoute
   AuthenticatedPartidaNovaRoute: typeof AuthenticatedPartidaNovaRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDisponibilidadeRoute: AuthenticatedDisponibilidadeRoute,
   AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPublicarRoute: AuthenticatedPublicarRoute,
+  AuthenticatedJogoJogoIdRoute: AuthenticatedJogoJogoIdRoute,
+  AuthenticatedJogoNovoRoute: AuthenticatedJogoNovoRoute,
   AuthenticatedPartidaNovaRoute: AuthenticatedPartidaNovaRoute,
 }
 
