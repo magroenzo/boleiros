@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   Bookmark,
+  Loader2,
   MapPin,
   MessageCircle,
   MoreVertical,
@@ -14,10 +19,15 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
-import { PlayerAvatar, SignedImage } from "@/components/SignedImage";
+import {
+  PlayerAvatar,
+  SignedImage,
+} from "@/components/SignedImage";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  createComment,
+  deleteComment,
   fetchComments,
   notify,
   toggleLike,
@@ -34,24 +44,31 @@ export function PostCard({
   currentUserId?: string;
 }) {
   const qc = useQueryClient();
+
   const [openComments, setOpenComments] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
   const [draft, setDraft] = useState("");
 
   const liked =
     !!currentUserId &&
-    post.post_likes.some((like) => like.user_id === currentUserId);
+    post.post_likes.some(
+      (like) => like.user_id === currentUserId,
+    );
 
   const saved =
     !!currentUserId &&
-    post.post_saves.some((save) => save.user_id === currentUserId);
+    post.post_saves.some(
+      (save) => save.user_id === currentUserId,
+    );
 
-  const isAuthor = !!currentUserId && currentUserId === post.author_id;
+  const isAuthor =
+    !!currentUserId && currentUserId === post.author_id;
 
-  const invalidate = () =>
-    qc.invalidateQueries({
+  function invalidatePosts() {
+    return qc.invalidateQueries({
       queryKey: ["posts"],
     });
+  }
 
   const likeMutation = useMutation({
     mutationFn: async () => {
@@ -70,8 +87,14 @@ export function PostCard({
         });
       }
     },
-    onSuccess: invalidate,
-    onError: (error: Error) => toast.error(error.message),
+
+    onSuccess: () => {
+      void invalidatePosts();
+    },
+
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
   });
 
   const saveMutation = useMutation({
@@ -82,14 +105,25 @@ export function PostCard({
 
       await toggleSave(post.id, currentUserId, saved);
     },
-    onSuccess: invalidate,
-    onError: (error: Error) => toast.error(error.message),
+
+    onSuccess: () => {
+      void invalidatePosts();
+    },
+
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (!currentUserId || currentUserId !== post.author_id) {
-        throw new Error("Você não pode excluir esta publicação");
+      if (
+        !currentUserId ||
+        currentUserId !== post.author_id
+      ) {
+        throw new Error(
+          "Você não pode excluir esta publicação",
+        );
       }
 
       const { error } = await supabase
@@ -102,20 +136,25 @@ export function PostCard({
         throw error;
       }
     },
+
     onSuccess: () => {
       setOpenMenu(false);
 
-      void qc.removeQueries({
+      qc.removeQueries({
         queryKey: ["comments", post.id],
       });
 
-      invalidate();
+      void invalidatePosts();
+
       toast.success("Publicação excluída");
     },
-    onError: (error: Error) => toast.error(error.message),
+
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
   });
 
-  function confirmDelete() {
+  function confirmDeletePost() {
     const confirmed = window.confirm(
       "Tem certeza que deseja excluir esta publicação?",
     );
@@ -143,15 +182,11 @@ export function PostCard({
         throw new Error("Digite um comentário");
       }
 
-      const { error } = await supabase.from("post_comments").insert({
-        post_id: post.id,
-        user_id: currentUserId,
+      await createComment({
+        postId: post.id,
+        userId: currentUserId,
         content: comment,
       });
-
-      if (error) {
-        throw error;
-      }
 
       if (post.author_id !== currentUserId) {
         await notify({
@@ -163,6 +198,7 @@ export function PostCard({
         });
       }
     },
+
     onSuccess: () => {
       setDraft("");
 
@@ -170,21 +206,63 @@ export function PostCard({
         queryKey: ["comments", post.id],
       });
 
-      invalidate();
+      void invalidatePosts();
     },
-    onError: (error: Error) => toast.error(error.message),
+
+    onError: (error: Error) => {
+      toast.error(
+        error.message ||
+          "Não foi possível publicar o comentário.",
+      );
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      if (!currentUserId) {
+        throw new Error(
+          "Entre para excluir comentários.",
+        );
+      }
+
+      await deleteComment({
+        commentId,
+        userId: currentUserId,
+      });
+    },
+
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: ["comments", post.id],
+      });
+
+      void invalidatePosts();
+
+      toast.success("Comentário excluído");
+    },
+
+    onError: (error: Error) => {
+      toast.error(
+        error.message ||
+          "Não foi possível excluir o comentário.",
+      );
+    },
   });
 
   async function share() {
-    const url = `${window.location.origin}/jogador/${
-      post.profiles?.username ?? ""
-    }`;
+    const username = post.profiles?.username;
+
+    const url = username
+      ? `${window.location.origin}/jogador/${username}`
+      : window.location.href;
 
     try {
       if (navigator.share) {
         await navigator.share({
           title: "Boleiros",
-          text: post.caption ?? "Confira esta publicação no Boleiros.",
+          text:
+            post.caption ??
+            "Confira esta publicação no Boleiros.",
           url,
         });
 
@@ -194,46 +272,63 @@ export function PostCard({
       await navigator.clipboard.writeText(url);
       toast.success("Link copiado");
     } catch {
-      // Compartilhamento cancelado pelo usuário.
+      // O usuário pode ter cancelado o compartilhamento.
     }
   }
 
   return (
     <article className="overflow-hidden border-b border-border bg-background pb-3">
       <header className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
-        <Link
-          to="/jogador/$username"
-          params={{
-            username: post.profiles?.username ?? "",
-          }}
-          aria-label={post.profiles?.full_name ?? "Jogador"}
-        >
-          <PlayerAvatar
-            path={post.profiles?.avatar_url}
-            name={
-              post.profiles?.full_name ||
-              post.profiles?.username ||
-              "Jogador"
-            }
-            className="h-11 w-11 ring-2 ring-primary/40"
-          />
-        </Link>
-
-        <div className="min-w-0">
+        {post.profiles?.username ? (
           <Link
             to="/jogador/$username"
             params={{
-              username: post.profiles?.username ?? "",
+              username: post.profiles.username,
             }}
-            className="block truncate text-sm font-bold hover:text-primary"
+            aria-label={
+              post.profiles.full_name ?? "Jogador"
+            }
           >
-            {post.profiles?.full_name || post.profiles?.username}
+            <PlayerAvatar
+              path={post.profiles.avatar_url}
+              name={
+                post.profiles.full_name ||
+                post.profiles.username
+              }
+              className="h-11 w-11 ring-2 ring-primary/40"
+            />
           </Link>
+        ) : (
+          <PlayerAvatar
+            path={post.profiles?.avatar_url}
+            name="Jogador"
+            className="h-11 w-11 ring-2 ring-primary/40"
+          />
+        )}
+
+        <div className="min-w-0">
+          {post.profiles?.username ? (
+            <Link
+              to="/jogador/$username"
+              params={{
+                username: post.profiles.username,
+              }}
+              className="block truncate text-sm font-bold hover:text-primary"
+            >
+              {post.profiles.full_name ||
+                post.profiles.username}
+            </Link>
+          ) : (
+            <p className="truncate text-sm font-bold">
+              Jogador
+            </p>
+          )}
 
           <p className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
             {post.city || post.profiles?.city ? (
               <>
                 <MapPin className="h-3 w-3 shrink-0" />
+
                 <span className="truncate">
                   {post.city || post.profiles?.city}
                 </span>
@@ -243,25 +338,36 @@ export function PostCard({
             {post.team_name ? (
               <>
                 <Shield className="ml-1 h-3 w-3 shrink-0" />
-                <span className="truncate">{post.team_name}</span>
+
+                <span className="truncate">
+                  {post.team_name}
+                </span>
               </>
             ) : null}
           </p>
         </div>
 
         <div className="flex items-center gap-1 justify-self-end">
-          <time className="text-[11px] text-muted-foreground">
-            {formatDistanceToNow(new Date(post.created_at), {
-              locale: ptBR,
-              addSuffix: false,
-            })}
+          <time
+            dateTime={post.created_at}
+            className="text-[11px] text-muted-foreground"
+          >
+            {formatDistanceToNow(
+              new Date(post.created_at),
+              {
+                locale: ptBR,
+                addSuffix: false,
+              },
+            )}
           </time>
 
           {isAuthor && (
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setOpenMenu((value) => !value)}
+                onClick={() =>
+                  setOpenMenu((value) => !value)
+                }
                 aria-label="Opções da publicação"
                 aria-expanded={openMenu}
                 className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -281,11 +387,17 @@ export function PostCard({
                   <div className="absolute right-0 top-full z-20 mt-1 min-w-44 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-lg">
                     <button
                       type="button"
-                      onClick={confirmDelete}
-                      disabled={deleteMutation.isPending}
+                      onClick={confirmDeletePost}
+                      disabled={
+                        deleteMutation.isPending
+                      }
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {deleteMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
 
                       {deleteMutation.isPending
                         ? "Excluindo..."
@@ -299,24 +411,30 @@ export function PostCard({
         </div>
       </header>
 
-      {post.media_url && post.media_type === "image" && (
-        <SignedImage
-          path={post.media_url}
-          alt={post.caption ?? "Publicação"}
-          className="max-h-[70vh] w-full object-cover"
-        />
-      )}
+      {post.media_url &&
+        post.media_type === "image" && (
+          <SignedImage
+            path={post.media_url}
+            alt={post.caption ?? "Publicação"}
+            className="max-h-[70vh] w-full object-cover"
+          />
+        )}
 
-      {post.media_url && post.media_type === "video" && (
-        <VideoPlayer path={post.media_url} />
-      )}
+      {post.media_url &&
+        post.media_type === "video" && (
+          <VideoPlayer path={post.media_url} />
+        )}
 
       <div className="flex items-center gap-4 px-4 pt-3">
         <button
           type="button"
           onClick={() => likeMutation.mutate()}
           disabled={likeMutation.isPending}
-          aria-label={liked ? "Remover curtida" : "Curtir publicação"}
+          aria-label={
+            liked
+              ? "Remover curtida"
+              : "Curtir publicação"
+          }
           aria-pressed={liked}
           className={cn(
             "group flex items-center gap-1.5 rounded-full px-1 py-1 text-sm font-semibold transition-all",
@@ -348,7 +466,9 @@ export function PostCard({
 
         <button
           type="button"
-          onClick={() => setOpenComments((value) => !value)}
+          onClick={() =>
+            setOpenComments((value) => !value)
+          }
           aria-label="Comentários"
           aria-expanded={openComments}
           className={cn(
@@ -370,7 +490,7 @@ export function PostCard({
 
         <button
           type="button"
-          onClick={share}
+          onClick={() => void share()}
           aria-label="Compartilhar"
           className="rounded-full p-1 transition-all hover:bg-muted hover:text-primary active:scale-90"
         >
@@ -381,16 +501,25 @@ export function PostCard({
           type="button"
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
-          aria-label={saved ? "Remover dos salvos" : "Salvar publicação"}
+          aria-label={
+            saved
+              ? "Remover dos salvos"
+              : "Salvar publicação"
+          }
           aria-pressed={saved}
           className="ml-auto rounded-full p-1 transition-all hover:bg-muted hover:text-primary active:scale-90 disabled:opacity-60"
         >
-          <Bookmark
-            className={cn(
-              "h-6 w-6",
-              saved && "fill-primary text-primary",
-            )}
-          />
+          {saveMutation.isPending ? (
+            <Loader2 className="h-6 w-6 animate-spin" />
+          ) : (
+            <Bookmark
+              className={cn(
+                "h-6 w-6",
+                saved &&
+                  "fill-primary text-primary",
+              )}
+            />
+          )}
         </button>
       </div>
 
@@ -404,67 +533,180 @@ export function PostCard({
 
       {post.caption && (
         <p className="px-4 pt-2 text-sm leading-relaxed">
-          <Link
-            to="/jogador/$username"
-            params={{
-              username: post.profiles?.username ?? "",
-            }}
-            className="font-bold hover:text-primary"
-          >
-            {post.profiles?.username}
-          </Link>{" "}
+          {post.profiles?.username ? (
+            <Link
+              to="/jogador/$username"
+              params={{
+                username: post.profiles.username,
+              }}
+              className="font-bold hover:text-primary"
+            >
+              {post.profiles.username}
+            </Link>
+          ) : (
+            <span className="font-bold">Jogador</span>
+          )}{" "}
           {post.caption}
         </p>
       )}
 
-      {post.post_comments.length > 0 && !openComments && (
-        <button
-          type="button"
-          onClick={() => setOpenComments(true)}
-          className="px-4 pt-2 text-left text-xs text-muted-foreground hover:text-foreground"
-        >
-          Ver{" "}
-          {post.post_comments.length === 1
-            ? "1 comentário"
-            : `todos os ${post.post_comments.length} comentários`}
-        </button>
-      )}
+      {post.post_comments.length > 0 &&
+        !openComments && (
+          <button
+            type="button"
+            onClick={() => setOpenComments(true)}
+            className="px-4 pt-2 text-left text-xs text-muted-foreground hover:text-foreground"
+          >
+            Ver{" "}
+            {post.post_comments.length === 1
+              ? "1 comentário"
+              : `todos os ${post.post_comments.length} comentários`}
+          </button>
+        )}
 
       {openComments && (
         <div className="mt-3 space-y-3 border-t border-border/60 px-4 pt-3">
           {comments.isLoading && (
-            <p className="text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Carregando comentários...
-            </p>
+            </div>
           )}
 
           {comments.isError && (
-            <p className="text-xs text-destructive">
-              Não foi possível carregar os comentários.
-            </p>
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
+              <p className="text-xs text-destructive">
+                Não foi possível carregar os
+                comentários.
+              </p>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void comments.refetch()
+                }
+                className="mt-2 text-xs font-bold text-primary"
+              >
+                Tentar novamente
+              </button>
+            </div>
           )}
 
-          {comments.data?.map((comment) => (
-            <div key={comment.id} className="flex items-start gap-2">
-              <PlayerAvatar
-                path={comment.profiles?.avatar_url}
-                name={
-                  comment.profiles?.full_name ||
-                  comment.profiles?.username ||
-                  "Jogador"
-                }
-                className="h-7 w-7 shrink-0"
-              />
+          {comments.data?.map((comment) => {
+            const canDelete =
+              !!currentUserId &&
+              comment.user_id === currentUserId;
 
-              <p className="min-w-0 text-sm">
-                <span className="font-bold">
-                  {comment.profiles?.username}{" "}
-                </span>
+            const username =
+              comment.profiles?.username ?? "";
 
-                <span className="break-words">{comment.content}</span>
-              </p>
-            </div>
-          ))}
+            const commentContent = (
+              <div className="min-w-0 flex-1 rounded-2xl bg-muted px-3 py-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    {username ? (
+                      <Link
+                        to="/jogador/$username"
+                        params={{ username }}
+                        className="block truncate text-xs font-bold hover:text-primary"
+                      >
+                        {comment.profiles
+                          ?.full_name ||
+                          comment.profiles
+                            ?.username}
+                      </Link>
+                    ) : (
+                      <p className="truncate text-xs font-bold">
+                        Jogador
+                      </p>
+                    )}
+
+                    <p className="break-words text-sm leading-relaxed">
+                      {comment.content}
+                    </p>
+                  </div>
+
+                  {canDelete && (
+                    <button
+                      type="button"
+                      aria-label="Excluir comentário"
+                      disabled={
+                        deleteCommentMutation.isPending
+                      }
+                      onClick={() => {
+                        const confirmed =
+                          window.confirm(
+                            "Deseja excluir este comentário?",
+                          );
+
+                        if (confirmed) {
+                          deleteCommentMutation.mutate(
+                            comment.id,
+                          );
+                        }
+                      }}
+                      className="shrink-0 rounded-full p-1 text-muted-foreground opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <time
+                  dateTime={comment.created_at}
+                  className="mt-1 block text-[10px] text-muted-foreground"
+                >
+                  {formatDistanceToNow(
+                    new Date(comment.created_at),
+                    {
+                      locale: ptBR,
+                      addSuffix: true,
+                    },
+                  )}
+                </time>
+              </div>
+            );
+
+            return (
+              <div
+                key={comment.id}
+                className="group flex items-start gap-2"
+              >
+                {username ? (
+                  <Link
+                    to="/jogador/$username"
+                    params={{ username }}
+                    className="shrink-0"
+                  >
+                    <PlayerAvatar
+                      path={
+                        comment.profiles
+                          ?.avatar_url
+                      }
+                      name={
+                        comment.profiles
+                          ?.full_name ||
+                        comment.profiles
+                          ?.username ||
+                        "Jogador"
+                      }
+                      className="h-8 w-8 shrink-0"
+                    />
+                  </Link>
+                ) : (
+                  <PlayerAvatar
+                    path={
+                      comment.profiles?.avatar_url
+                    }
+                    name="Jogador"
+                    className="h-8 w-8 shrink-0"
+                  />
+                )}
+
+                {commentContent}
+              </div>
+            );
+          })}
 
           {comments.data?.length === 0 && (
             <p className="text-xs text-muted-foreground">
@@ -476,7 +718,10 @@ export function PostCard({
             onSubmit={(event) => {
               event.preventDefault();
 
-              if (draft.trim() && !commentMutation.isPending) {
+              if (
+                draft.trim() &&
+                !commentMutation.isPending
+              ) {
                 commentMutation.mutate();
               }
             }}
@@ -484,20 +729,37 @@ export function PostCard({
           >
             <input
               value={draft}
-              onChange={(event) => setDraft(event.target.value)}
+              onChange={(event) =>
+                setDraft(event.target.value)
+              }
               placeholder="Adicione um comentário..."
               maxLength={500}
-              className="h-10 flex-1 rounded-full border border-border bg-muted px-4 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+              disabled={commentMutation.isPending}
+              className="h-10 flex-1 rounded-full border border-border bg-muted px-4 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60"
             />
 
             <button
               type="submit"
-              disabled={!draft.trim() || commentMutation.isPending}
-              className="text-sm font-bold text-primary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Enviar comentário"
+              disabled={
+                !draft.trim() ||
+                commentMutation.isPending
+              }
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 active:scale-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {commentMutation.isPending ? "Enviando..." : "Enviar"}
+              {commentMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </button>
           </form>
+
+          {draft.length > 400 && (
+            <p className="text-right text-[10px] text-muted-foreground">
+              {draft.length}/500
+            </p>
+          )}
         </div>
       )}
     </article>

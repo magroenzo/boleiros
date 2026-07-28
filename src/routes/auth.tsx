@@ -33,29 +33,59 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Conta criada! Bem-vindo ao Boleiros.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+async function handleEmail(e: React.FormEvent) {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    if (mode === "signup") {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) throw error;
+
+      if (!data.session) {
+        toast.success(
+          "Conta criada! Confira seu e-mail para confirmar o cadastro."
+        );
+
+        setMode("login");
+        setPassword("");
+        return;
       }
+
+      toast.success("Conta criada! Bem-vindo ao Boleiros.");
       void navigate({ to: "/" });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível entrar");
-    } finally {
-      setLoading(false);
+      return;
     }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (error) throw error;
+
+    void navigate({ to: "/" });
+  } catch (err) {
+    console.error("Erro de autenticação:", err);
+
+    toast.error(
+      err instanceof Error
+        ? err.message
+        : mode === "signup"
+          ? "Não foi possível criar a conta"
+          : "Não foi possível entrar"
+    );
+  } finally {
+    setLoading(false);
   }
+}
 
   async function oauth(provider: "google" | "apple") {
     const result = await lovable.auth.signInWithOAuth(provider, {

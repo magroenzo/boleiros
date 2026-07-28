@@ -8,21 +8,26 @@ import { aggregateStats, type Match, type Profile } from "@/lib/db";
 function age(birth?: string | null) {
   if (!birth) return null;
 
-  const birthDate = new Date(birth);
+  const [year, month, day] = birth.split("-").map(Number);
 
-  if (Number.isNaN(birthDate.getTime())) return null;
+  if (!year || !month || !day) return null;
 
   const today = new Date();
-  let years = today.getFullYear() - birthDate.getFullYear();
+  let years = today.getFullYear() - year;
 
   const birthdayHasNotHappened =
-    today.getMonth() < birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() &&
-      today.getDate() < birthDate.getDate());
+    today.getMonth() + 1 < month ||
+    (today.getMonth() + 1 === month && today.getDate() < day);
 
   if (birthdayHasNotHappened) years--;
 
-  return years;
+  return years >= 0 ? years : null;
+}
+
+function formatDominantFoot(foot?: string | null) {
+  if (!foot) return "N/D";
+
+  return foot.charAt(0).toUpperCase() + foot.slice(1);
 }
 
 function calculateOverall(matches: Match[]) {
@@ -159,9 +164,7 @@ export function ProfileHeader({
 
           <div className="border-x border-primary/15 px-3 py-3 text-center">
             <p className="font-display text-lg font-extrabold">
-              {profile.dominant_foot
-                ? profile.dominant_foot
-                : "N/D"}
+             {formatDominantFoot(profile.dominant_foot)}
             </p>
 
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
